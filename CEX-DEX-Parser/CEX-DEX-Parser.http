@@ -1,0 +1,6 @@
+@CEX_DEX_Parser_HostAddress = http://localhost:5258
+
+GET {{CEX_DEX_Parser_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
