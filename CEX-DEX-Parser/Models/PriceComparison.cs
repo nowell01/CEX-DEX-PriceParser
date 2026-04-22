@@ -1,5 +1,9 @@
-﻿namespace CEX_DEX_Parser.Models
+﻿using CEX_DEX_Parser.Metadata;
+using Microsoft.AspNetCore.Mvc;
+
+namespace CEX_DEX_Parser.Models
 {
+    [ModelMetadataType(typeof(PriceComparisonMetadata))]
     public class PriceComparison
     {
         public string Symbol { get; set; } = string.Empty;

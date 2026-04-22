@@ -40,12 +40,30 @@ builder.Services.AddHttpClient("KuCoin", c =>
     c.BaseAddress = new Uri(builder.Configuration["ExchangeApis:KuCoin"]!);
     c.Timeout = TimeSpan.FromSeconds(10);
 });
+builder.Services.AddHttpClient("Uniswap", c =>
+{
+    c.BaseAddress = new Uri(builder.Configuration["ExchangeApis:Uniswap"]!);
+    c.Timeout = TimeSpan.FromSeconds(10);
+});
+builder.Services.AddHttpClient("PancakeSwap", c =>
+{
+    c.BaseAddress = new Uri(builder.Configuration["ExchangeApis:PancakeSwap"]!);
+    c.Timeout = TimeSpan.FromSeconds(10);
+});
+builder.Services.AddHttpClient("Hyperliquid", c =>
+{
+    c.BaseAddress = new Uri(builder.Configuration["ExchangeApis:Hyperliquid"]!);
+    c.Timeout = TimeSpan.FromSeconds(10);
+});
 
 // Application services
 builder.Services.AddSingleton<JsonStorageService>();
 builder.Services.AddScoped<BinanceClient>();
 builder.Services.AddScoped<CoinbaseClient>();
 builder.Services.AddScoped<KuCoinClient>();
+builder.Services.AddScoped<UniswapClient>();
+builder.Services.AddScoped<PancakeSwapClient>();
+builder.Services.AddScoped<HyperliquidClient>();
 builder.Services.AddScoped<ExchangeService>();
 builder.Services.AddScoped<AlertService>();
 builder.Services.AddSingleton<ArbitrageDetector>();

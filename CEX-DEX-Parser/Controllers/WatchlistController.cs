@@ -1,3 +1,4 @@
+using CEX_DEX_Parser.DTOs;
 using CEX_DEX_Parser.Models;
 using CEX_DEX_Parser.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -15,20 +16,44 @@ namespace CEX_DEX_Parser.Controllers
             _storage = storage;
         }
 
+        // GET: api/watchlist
         [HttpGet]
-        public async Task<ActionResult<List<TradingPair>>> GetAll()
+        public async Task<ActionResult<IEnumerable<TradingPairDTO>>> GetAll()
         {
             var pairs = await _storage.ReadAsync<TradingPair>("watchlist.json");
-            return Ok(pairs);
+
+            var pairDTOs = pairs
+                .Select(p => new TradingPairDTO
+                {
+                    Symbol = p.Symbol,
+                    BaseAsset = p.BaseAsset,
+                    QuoteAsset = p.QuoteAsset
+                })
+                .ToList();
+
+            if (pairDTOs.Count > 0)
+            {
+                return pairDTOs;
+            }
+            else
+            {
+                return NotFound(new { message = "Error: No trading pairs found in the watchlist." });
+            }
         }
 
+        // POST: api/watchlist
         [HttpPost]
-        public async Task<ActionResult<TradingPair>> Add([FromBody] TradingPair pair)
+        public async Task<ActionResult<TradingPairDTO>> Add([FromBody] TradingPairDTO pairDTO)
         {
-            if (string.IsNullOrWhiteSpace(pair.Symbol))
-                return BadRequest("Symbol is required.");
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
 
-            pair.Symbol = pair.Symbol.ToUpper().Trim();
+            TradingPair pair = new TradingPair
+            {
+                Symbol = pairDTO.Symbol!.ToUpper().Trim()
+            };
 
             var parts = pair.Symbol.Split('/');
             if (parts.Length == 2)
@@ -40,13 +65,21 @@ namespace CEX_DEX_Parser.Controllers
             var pairs = await _storage.ReadAsync<TradingPair>("watchlist.json");
 
             if (pairs.Any(p => string.Equals(p.Symbol, pair.Symbol, StringComparison.OrdinalIgnoreCase)))
-                return Conflict($"{pair.Symbol} is already in the watchlist.");
+            {
+                return Conflict(new { message = $"Unable to save: {pair.Symbol} is already in the watchlist." });
+            }
 
             pairs.Add(pair);
             await _storage.WriteAsync("watchlist.json", pairs);
-            return CreatedAtAction(nameof(GetAll), pair);
+
+            pairDTO.Symbol = pair.Symbol;
+            pairDTO.BaseAsset = pair.BaseAsset;
+            pairDTO.QuoteAsset = pair.QuoteAsset;
+
+            return CreatedAtAction(nameof(GetAll), pairDTO);
         }
 
+        // DELETE: api/watchlist/{symbol}
         [HttpDelete("{symbol}")]
         public async Task<IActionResult> Remove(string symbol)
         {
@@ -56,7 +89,9 @@ namespace CEX_DEX_Parser.Controllers
                 string.Equals(p.Symbol, decoded, StringComparison.OrdinalIgnoreCase));
 
             if (removed == 0)
-                return NotFound($"{decoded} not found in watchlist.");
+            {
+                return NotFound(new { message = $"Error: {decoded} not found in watchlist." });
+            }
 
             await _storage.WriteAsync("watchlist.json", pairs);
             return NoContent();
