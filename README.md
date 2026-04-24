@@ -12,7 +12,7 @@ A real-time cryptocurrency arbitrage detection system built with **ASP.NET Core 
 - **IHttpClientFactory** — Named HTTP clients for each exchange
 - **JSON file storage** — Thread-safe persistence with `SemaphoreSlim` locking
 - **Swagger / OpenAPI** — Auto-generated API documentation
-- **React.js** - Front-end
+- **React.js / CSS** - Front-end
 
 ---
 
