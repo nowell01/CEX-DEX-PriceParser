@@ -1,5 +1,4 @@
 using CEX_DEX_Parser.DTOs;
-using CEX_DEX_Parser.Models;
 using CEX_DEX_Parser.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,24 +9,43 @@ namespace CEX_DEX_Parser.Controllers
     public class PricesController : ControllerBase
     {
         private readonly ExchangeService _exchangeService;
-        private readonly JsonStorageService _storage;
 
-        public PricesController(ExchangeService exchangeService, JsonStorageService storage)
+        // Default trading pairs tracked by the application
+        private static readonly string[] DefaultPairs = new[]
+        {
+            "BTC/USDT",
+            "ETH/USDT",
+            "SOL/USDT",
+            "XRP/USDT",
+            "SUI/USDT",
+            "DOGE/USDT",
+            "ADA/USDT",
+            "LTC/USDT",
+            "AVAX/USDT",
+            "TON/USDT",
+            "AAVE/USDT",
+            "APEX/USDT",
+            "ARB/USDT",
+            "BNB/USDT",
+            "STRK/USDT",
+            "TRX/USDT",
+            "PEPE/USDT",
+            "LINK/USDT",
+            "TRUMP/USDT",
+            "SHIB/USDT",
+            "XLM/USDT"
+        };
+
+        public PricesController(ExchangeService exchangeService)
         {
             _exchangeService = exchangeService;
-            _storage = storage;
         }
 
         // GET: api/prices
         [HttpGet]
         public async Task<ActionResult<IEnumerable<PriceComparisonDTO>>> GetAll()
         {
-            var watchlist = await _storage.ReadAsync<TradingPair>("watchlist.json");
-            var symbols = watchlist.Count > 0
-                ? watchlist.Select(p => p.Symbol)
-                : new[] { "BTC/USDT", "ETH/USDT" };
-
-            var comparisons = await _exchangeService.GetAllComparisonsAsync(symbols);
+            var comparisons = await _exchangeService.GetAllComparisonsAsync(DefaultPairs);
 
             var comparisonDTOs = comparisons
                 .Select(c => new PriceComparisonDTO

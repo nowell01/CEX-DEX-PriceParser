@@ -1,0 +1,126 @@
+.alerts-sidebar {
+  width: 320px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-card);
+  border-left: 1px solid var(--border);
+  transition: width var(--transition);
+  overflow: hidden;
+}
+
+.alerts-sidebar.collapsed {
+  width: 52px;
+}
+
+.alerts-sidebar.collapsed .sidebar-header {
+  justify-content: center;
+  padding: 12px;
+}
+
+.alerts-sidebar.collapsed .sidebar-title-row {
+  display: none;
+}
+
+/* Sidebar header */
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 16px 14px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.sidebar-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sidebar-title {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--white);
+  white-space: nowrap;
+}
+
+.alert-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 99px;
+  background: var(--magenta);
+  color: var(--white);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.sidebar-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: var(--gray-mid);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: color var(--transition), background var(--transition);
+  flex-shrink: 0;
+}
+
+.sidebar-toggle svg {
+  width: 16px;
+  height: 16px;
+}
+
+.sidebar-toggle:hover {
+  color: var(--purple);
+  background: var(--purple-dim);
+}
+
+/* Alerts list */
+.alerts-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  padding: 10px 0;
+}
+
+/* Empty state */
+.alerts-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 40px 24px;
+  text-align: center;
+}
+
+.alerts-empty svg {
+  width: 32px;
+  height: 32px;
+  color: var(--gray);
+}
+
+.alerts-empty p {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--gray-light);
+}
+
+.alerts-empty span {
+  font-size: 11px;
+  color: var(--gray-mid);
+  line-height: 1.5;
+}

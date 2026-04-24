@@ -1,0 +1,242 @@
+.pair-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.pair-card:hover {
+  border-color: var(--border-glow);
+  box-shadow: 0 0 20px rgba(155, 48, 255, 0.08);
+}
+
+/* Header row */
+.pair-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pair-symbol {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  display: flex;
+  align-items: baseline;
+  gap: 1px;
+}
+
+.symbol-base {
+  background: linear-gradient(135deg, #FFFFFF, #E040FB);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.symbol-slash {
+  color: var(--gray);
+  font-weight: 300;
+  margin: 0 2px;
+  -webkit-text-fill-color: var(--gray);
+}
+
+.symbol-quote {
+  color: var(--gray-light);
+  font-size: 14px;
+  -webkit-text-fill-color: var(--gray-light);
+}
+
+/* Spread badge */
+.spread-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid;
+}
+
+.spread-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.7;
+  line-height: 1;
+  margin-bottom: 2px;
+}
+
+.spread-value {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.spread-low {
+  color: var(--spread-low);
+  background: rgba(0, 230, 118, 0.07);
+  border-color: rgba(0, 230, 118, 0.25);
+}
+
+.spread-mid {
+  color: var(--spread-mid);
+  background: rgba(255, 179, 0, 0.07);
+  border-color: rgba(255, 179, 0, 0.25);
+}
+
+.spread-high {
+  color: var(--spread-high);
+  background: rgba(255, 82, 82, 0.07);
+  border-color: rgba(255, 82, 82, 0.25);
+}
+
+.spread-extreme {
+  color: var(--spread-extreme);
+  background: rgba(224, 64, 251, 0.07);
+  border-color: rgba(224, 64, 251, 0.3);
+  animation: pulse-badge 2s ease-in-out infinite;
+}
+
+@keyframes pulse-badge {
+  0%, 100% { box-shadow: none; }
+  50%       { box-shadow: 0 0 12px rgba(224, 64, 251, 0.3); }
+}
+
+/* Exchange summary row */
+.exchange-summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--bg-card-2);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+}
+
+.exchange-tag {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 80px;
+}
+
+.tag-label {
+  font-size: 10px;
+  color: var(--gray-mid);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.tag-exchange {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ex-color, #888);
+}
+
+.spread-arrow {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  color: var(--gray);
+}
+
+.spread-arrow svg {
+  width: 60px;
+  height: 12px;
+}
+
+.spread-raw {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--gray-mid);
+}
+
+/* Price table */
+.price-table-wrap {
+  overflow-x: auto;
+}
+
+.price-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.price-table thead th {
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--gray-mid);
+  padding: 0 8px 8px 8px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.price-table thead th:not(:first-child) {
+  text-align: right;
+}
+
+.price-row {
+  border-bottom: 1px solid var(--border);
+  transition: background var(--transition);
+}
+
+.price-row:last-child {
+  border-bottom: none;
+}
+
+.price-row:hover {
+  background: rgba(155, 48, 255, 0.04);
+}
+
+.price-table tbody td {
+  padding: 9px 8px;
+  vertical-align: middle;
+}
+
+.price-table tbody td:not(:first-child) {
+  text-align: right;
+}
+
+/* Exchange name cell */
+.ex-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-weight: 500;
+}
+
+.ex-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ex-color, #888);
+  flex-shrink: 0;
+}
+
+/* Data cells */
+.price-cell {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--white);
+}
+
+.vol-cell {
+  color: var(--gray-light);
+  font-variant-numeric: tabular-nums;
+}
+
+.ts-cell {
+  color: var(--gray-mid);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}

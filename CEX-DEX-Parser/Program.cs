@@ -40,9 +40,14 @@ builder.Services.AddHttpClient("KuCoin", c =>
     c.BaseAddress = new Uri(builder.Configuration["ExchangeApis:KuCoin"]!);
     c.Timeout = TimeSpan.FromSeconds(10);
 });
-builder.Services.AddHttpClient("Uniswap", c =>
+builder.Services.AddHttpClient("Bybit", c =>
 {
-    c.BaseAddress = new Uri(builder.Configuration["ExchangeApis:Uniswap"]!);
+    c.BaseAddress = new Uri(builder.Configuration["ExchangeApis:Bybit"]!);
+    c.Timeout = TimeSpan.FromSeconds(10);
+});
+builder.Services.AddHttpClient("OKX", c =>
+{
+    c.BaseAddress = new Uri(builder.Configuration["ExchangeApis:OKX"]!);
     c.Timeout = TimeSpan.FromSeconds(10);
 });
 builder.Services.AddHttpClient("PancakeSwap", c =>
@@ -61,7 +66,8 @@ builder.Services.AddSingleton<JsonStorageService>();
 builder.Services.AddScoped<BinanceClient>();
 builder.Services.AddScoped<CoinbaseClient>();
 builder.Services.AddScoped<KuCoinClient>();
-builder.Services.AddScoped<UniswapClient>();
+builder.Services.AddScoped<BybitClient>();
+builder.Services.AddScoped<OkxClient>();
 builder.Services.AddScoped<PancakeSwapClient>();
 builder.Services.AddScoped<HyperliquidClient>();
 builder.Services.AddScoped<ExchangeService>();
@@ -77,8 +83,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
 app.UseCors();
+app.UseHttpsRedirection();
 app.UseAuthorization();
 
 app.MapControllers();

@@ -23,29 +23,5 @@ namespace CEX_DEX_Parser.Services
 
         public Task<List<AlertLog>> GetHistoryAsync() =>
             _storage.ReadAsync<AlertLog>("alerts-log.json");
-
-        public Task<List<AlertConfig>> GetConfigsAsync() =>
-            _storage.ReadAsync<AlertConfig>("alerts-config.json");
-
-        public async Task SaveConfigAsync(AlertConfig config)
-        {
-            var configs = await GetConfigsAsync();
-            var existing = configs.FindIndex(c =>
-                string.Equals(c.Symbol, config.Symbol, StringComparison.OrdinalIgnoreCase));
-
-            if (existing >= 0)
-                configs[existing] = config;
-            else
-                configs.Add(config);
-
-            await _storage.WriteAsync("alerts-config.json", configs);
-        }
-
-        public async Task DeleteConfigAsync(string symbol)
-        {
-            var configs = await GetConfigsAsync();
-            configs.RemoveAll(c => string.Equals(c.Symbol, symbol, StringComparison.OrdinalIgnoreCase));
-            await _storage.WriteAsync("alerts-config.json", configs);
-        }
     }
 }

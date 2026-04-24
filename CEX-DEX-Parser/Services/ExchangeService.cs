@@ -7,7 +7,8 @@ namespace CEX_DEX_Parser.Services
         private readonly BinanceClient _binance;
         private readonly CoinbaseClient _coinbase;
         private readonly KuCoinClient _kuCoin;
-        private readonly UniswapClient _uniswap;
+        private readonly BybitClient _bybit;
+        private readonly OkxClient _okx;
         private readonly PancakeSwapClient _pancakeSwap;
         private readonly HyperliquidClient _hyperliquid;
         private readonly ILogger<ExchangeService> _logger;
@@ -16,7 +17,8 @@ namespace CEX_DEX_Parser.Services
             BinanceClient binance,
             CoinbaseClient coinbase,
             KuCoinClient kuCoin,
-            UniswapClient uniswap,
+            BybitClient bybit,
+            OkxClient okx,
             PancakeSwapClient pancakeSwap,
             HyperliquidClient hyperliquid,
             ILogger<ExchangeService> logger)
@@ -24,7 +26,8 @@ namespace CEX_DEX_Parser.Services
             _binance = binance;
             _coinbase = coinbase;
             _kuCoin = kuCoin;
-            _uniswap = uniswap;
+            _bybit = bybit;
+            _okx = okx;
             _pancakeSwap = pancakeSwap;
             _hyperliquid = hyperliquid;
             _logger = logger;
@@ -37,7 +40,8 @@ namespace CEX_DEX_Parser.Services
                 _binance.GetPriceAsync(symbol),
                 _coinbase.GetPriceAsync(symbol),
                 _kuCoin.GetPriceAsync(symbol),
-                _uniswap.GetPriceAsync(symbol),
+                _bybit.GetPriceAsync(symbol),
+                _okx.GetPriceAsync(symbol),
                 _pancakeSwap.GetPriceAsync(symbol),
                 _hyperliquid.GetPriceAsync(symbol)
             };

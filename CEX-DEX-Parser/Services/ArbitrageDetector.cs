@@ -4,19 +4,16 @@ namespace CEX_DEX_Parser.Services
 {
     public class ArbitrageDetector
     {
-        public List<AlertLog> Check(IEnumerable<PriceComparison> comparisons, IEnumerable<AlertConfig> configs)
+        // Fixed threshold: alert when spread exceeds 3%
+        private const decimal SpreadThresholdPercent = 3.0m;
+
+        public List<AlertLog> Check(IEnumerable<PriceComparison> comparisons)
         {
             var triggered = new List<AlertLog>();
-            var configMap = configs
-                .Where(c => c.IsEnabled)
-                .ToDictionary(c => c.Symbol, StringComparer.OrdinalIgnoreCase);
 
             foreach (var comparison in comparisons)
             {
-                if (!configMap.TryGetValue(comparison.Symbol, out var config))
-                    continue;
-
-                if (comparison.SpreadPercent >= config.ThresholdPercent)
+                if (comparison.SpreadPercent >= SpreadThresholdPercent)
                 {
                     triggered.Add(new AlertLog
                     {
