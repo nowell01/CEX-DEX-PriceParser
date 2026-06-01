@@ -14,13 +14,13 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowReact", policy =>
     {
         policy.WithOrigins(
-                "http://localhost:3000",                    // local dev
-                "https://cex-dex-client.vercel.app/",             // vercel production
-                "https://cex-dex-client-git-main-nowell01s-projects.vercel.app/"     // vercel preview deploys
+                "http://localhost:3000",
+                "https://cex-dex-client.vercel.app",
+                "https://cex-dex-client-git-main-nowell01s-projects.vercel.app"
               )
               .AllowAnyHeader()
               .AllowAnyMethod()
-              .AllowCredentials(); // keep this for SignalR
+              .AllowCredentials();
     });
 });
 
@@ -87,7 +87,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseCors();
+app.UseCors("AllowReact");
 app.UseHttpsRedirection();
 app.UseAuthorization();
 
