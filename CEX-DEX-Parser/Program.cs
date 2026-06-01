@@ -73,6 +73,7 @@ builder.Services.AddScoped<HyperliquidClient>();
 builder.Services.AddScoped<ExchangeService>();
 builder.Services.AddScoped<AlertService>();
 builder.Services.AddSingleton<ArbitrageDetector>();
+builder.Services.AddSingleton<ITelegramNotifier, TelegramNotifier>();
 builder.Services.AddHostedService<PriceMonitorService>();
 
 var app = builder.Build();
