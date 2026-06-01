@@ -25,8 +25,7 @@ namespace CEX_DEX_Parser.Services
             await _hub.Clients.All.SendAsync("AlertTriggered", alert);
             await _telegram.SendAsync(TelegramAlertFormatter.Format(alert));
 
-            _logger.LogInformation("Alert fired",
-            alert.Symbol, alert.SpreadPercent, alert.LowExchange, alert.HighExchange);
+            _logger.LogInformation("Alert fired", alert.Symbol, alert.SpreadPercent, alert.LowExchange, alert.HighExchange);
         }
 
         public Task<List<AlertLog>> GetHistoryAsync() =>

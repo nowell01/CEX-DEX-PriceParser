@@ -30,6 +30,12 @@ public class TelegramNotifier : ITelegramNotifier
                 if (_lastSent.TryGetValue(key, out var last) && DateTime.UtcNow - last < _cooldown)
                     return; // skip — same alert fired too recently
 
+                await _bot.SendMessage(
+                chatId: _chatId,
+                text: message,
+                parseMode: ParseMode.Html,
+                cancellationToken: ct);
+
                 _lastSent[key] = DateTime.UtcNow;
             }
         }

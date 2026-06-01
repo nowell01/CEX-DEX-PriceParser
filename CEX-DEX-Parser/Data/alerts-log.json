@@ -1,1 +1,42 @@
-[]
+[
+  {
+    "Id": "7b53b5a2-a3a6-4159-aed6-166302fe01e4",
+    "Symbol": "TON/USDT",
+    "HighExchange": "Hyperliquid",
+    "LowExchange": "PancakeSwap",
+    "HighPrice": 2.20885,
+    "LowPrice": 2.14,
+    "SpreadPercent": 3.2173,
+    "TriggeredAt": "2026-06-01T18:07:34.682815Z"
+  },
+  {
+    "Id": "a8bb4925-ce40-4d96-86d9-a261df9cf012",
+    "Symbol": "TON/USDT",
+    "HighExchange": "Bybit",
+    "LowExchange": "PancakeSwap",
+    "HighPrice": 2.215,
+    "LowPrice": 2.15,
+    "SpreadPercent": 3.0233,
+    "TriggeredAt": "2026-06-01T18:12:06.3781274Z"
+  },
+  {
+    "Id": "aa5ca8e7-ed38-4c9a-acf9-b30191900b24",
+    "Symbol": "TON/USDT",
+    "HighExchange": "Hyperliquid",
+    "LowExchange": "PancakeSwap",
+    "HighPrice": 2.2154,
+    "LowPrice": 2.15,
+    "SpreadPercent": 3.0419,
+    "TriggeredAt": "2026-06-01T18:37:10.5399436Z"
+  },
+  {
+    "Id": "91c3d8a6-c8e8-4796-9075-4141e71c4c32",
+    "Symbol": "TON/USDT",
+    "HighExchange": "Hyperliquid",
+    "LowExchange": "PancakeSwap",
+    "HighPrice": 2.21595,
+    "LowPrice": 2.15,
+    "SpreadPercent": 3.0674,
+    "TriggeredAt": "2026-06-01T18:59:19.2839877Z"
+  }
+]
