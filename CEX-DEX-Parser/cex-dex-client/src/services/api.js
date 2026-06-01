@@ -1,5 +1,5 @@
-//const BASE = 'https://cex-dex-parser-h7b3f0gwbyfah7ft.canadacentral-01.azurewebsites.net';
-const BASE = 'https://localhost:5258';
+const BASE = 'https://cex-dex-parser-h7b3f0gwbyfah7ft.canadacentral-01.azurewebsites.net';
+//const BASE = 'https://localhost:5258';
 
 export async function fetchPrices() {
   const res = await fetch(`${BASE}/api/prices`);
