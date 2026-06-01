@@ -11,13 +11,16 @@ builder.Services.AddSwaggerGen();
 // CORS — allow React dev server
 builder.Services.AddCors(options =>
 {
-    options.AddDefaultPolicy(policy =>
+    options.AddPolicy("AllowReact", policy =>
     {
-        policy
-            .WithOrigins("http://localhost:3000")
-            .AllowAnyHeader()
-            .AllowAnyMethod()
-            .AllowCredentials(); // required for SignalR
+        policy.WithOrigins(
+                "http://localhost:3000",                    // local dev
+                "https://cex-dex-client.vercel.app/",             // vercel production
+                "https://cex-dex-client-git-main-nowell01s-projects.vercel.app/"     // vercel preview deploys
+              )
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials(); // keep this for SignalR
     });
 });
 
