@@ -2,20 +2,20 @@ const BASE = 'https://cex-dex-parser-h7b3f0gwbyfah7ft.canadacentral-01.azurewebs
 //const BASE = 'https://localhost:5258';
 
 export async function fetchPrices() {
-  const res = await fetch(`${BASE}/api/prices`);
+    const res = await fetch(`${BASE}/api/prices`, { credentials: 'include' });
   if (!res.ok) throw new Error('No price data available');
   return res.json();
 }
 
 export async function fetchPriceBySymbol(symbol) {
   const encoded = encodeURIComponent(symbol);
-  const res = await fetch(`${BASE}/api/prices/${encoded}`);
+    const res = await fetch(`${BASE}/api/prices/${encoded}`, { credentials: 'include' });
   if (!res.ok) throw new Error(`Could not fetch prices for ${symbol}`);
   return res.json();
 }
 
 export async function fetchAlertHistory() {
-  const res = await fetch(`${BASE}/api/alerts/history`);
+    const res = await fetch(`${BASE}/api/alerts/history`, { credentials: 'include' });
   if (!res.ok) throw new Error('No alert history');
   return res.json();
 }
