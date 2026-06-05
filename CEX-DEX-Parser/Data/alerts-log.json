@@ -38,5 +38,55 @@
     "LowPrice": 2.15,
     "SpreadPercent": 3.0674,
     "TriggeredAt": "2026-06-01T18:59:19.2839877Z"
+  },
+  {
+    "Id": "11351f5b-44ca-4e5a-9ba0-fa0685222ccc",
+    "Symbol": "TON/USDT",
+    "HighExchange": "PancakeSwap",
+    "LowExchange": "Coinbase",
+    "HighPrice": 1.72,
+    "LowPrice": 1.65,
+    "SpreadPercent": 4.2424,
+    "TriggeredAt": "2026-06-05T04:08:15.1131486Z"
+  },
+  {
+    "Id": "5d2819ec-de62-4080-bd75-125e43c4bc4d",
+    "Symbol": "TON/USDT",
+    "HighExchange": "PancakeSwap",
+    "LowExchange": "Hyperliquid",
+    "HighPrice": 1.72,
+    "LowPrice": 1.65195,
+    "SpreadPercent": 4.1194,
+    "TriggeredAt": "2026-06-05T04:08:41.2165457Z"
+  },
+  {
+    "Id": "82e84f74-a355-4f1f-ae03-d3a6b674a98c",
+    "Symbol": "TON/USDT",
+    "HighExchange": "PancakeSwap",
+    "LowExchange": "Coinbase",
+    "HighPrice": 1.72,
+    "LowPrice": 1.6495,
+    "SpreadPercent": 4.2740,
+    "TriggeredAt": "2026-06-05T04:09:22.0085059Z"
+  },
+  {
+    "Id": "c403d820-74d4-4713-a489-ef54eb6e092a",
+    "Symbol": "TON/USDT",
+    "HighExchange": "PancakeSwap",
+    "LowExchange": "Coinbase",
+    "HighPrice": 1.72,
+    "LowPrice": 1.653,
+    "SpreadPercent": 4.0532,
+    "TriggeredAt": "2026-06-05T04:09:54.7403748Z"
+  },
+  {
+    "Id": "24f0bd5d-8a5b-48dd-bf91-e8869f8c45d8",
+    "Symbol": "TON/USDT",
+    "HighExchange": "PancakeSwap",
+    "LowExchange": "Hyperliquid",
+    "HighPrice": 1.72,
+    "LowPrice": 1.6488,
+    "SpreadPercent": 4.3183,
+    "TriggeredAt": "2026-06-05T04:12:44.7930144Z"
   }
 ]

@@ -25,7 +25,8 @@ namespace CEX_DEX_Parser.Services
             await _hub.Clients.All.SendAsync("AlertTriggered", alert);
             await _telegram.SendAsync(TelegramAlertFormatter.Format(alert));
 
-            _logger.LogInformation("Alert fired", alert.Symbol, alert.SpreadPercent, alert.LowExchange, alert.HighExchange);
+            _logger.LogInformation("Alert fired: {Symbol} spread {SpreadPercent:F2}% — buy on {LowExchange}, sell on {HighExchange}",
+            alert.Symbol, alert.SpreadPercent, alert.LowExchange, alert.HighExchange);
         }
 
         public Task<List<AlertLog>> GetHistoryAsync() =>
@@ -35,7 +36,7 @@ namespace CEX_DEX_Parser.Services
             public static string Format(AlertLog alert)
             {
                 return $"""
-             <b>Arbitrage Alert — {alert.Symbol}</b>
+             <b>Arbitrage Alert {alert.Symbol}</b>
 
              <b>Buy on:</b>  {alert.LowExchange}  @ ${alert.LowPrice:N2}
              <b>Sell on:</b> {alert.HighExchange} @ ${alert.HighPrice:N2}
