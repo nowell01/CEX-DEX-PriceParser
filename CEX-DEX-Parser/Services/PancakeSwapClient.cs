@@ -26,6 +26,17 @@ namespace CEX_DEX_Parser.Services
             { "TON",  "0x76A797A59Ba2C17726896976B7B3747BfD1d220f" }, // Toncoin on BSC
             { "AAVE", "0xfb6115445Bff7b52FeB98650C87f44907E58f802" }, // Binance-pegged AAVE
             { "ARB",  "0xa050FFb3eEb8200eEB7F61ce34FF644420FD3522" }, // Arbitrum on BSC
+            { "LINK", "0xF8A0BF9cF54Bb92F17374d9e9A321E6a111A51bD" }, // Binance-pegged Chainlink
+            { "TRX",  "0xCE7de646e7208a4Ef112cb6ed5038FA6cC6b12E3" }, // TRON on BSC
+            { "XLM",  "0x43c934A84a843fE4020B5f30347791d49d067b49" }, // Stellar on BSC
+            { "SHIB", "0x2859e4544C4bB03966803b044A93563Bd2D0DD4D" }, // Binance-pegged SHIB
+            { "PEPE", "0x25d887Ce7a35172C62FeBFD67a1856F20FaEbb00" }  // PEPE on BSC
+ 
+            // NOT ADDED — no official Binance-pegged BEP20 with real PancakeSwap liquidity:
+            // SUI   — native to Sui Network, no official BSC bridge with PancakeSwap depth
+            // APEX  — ApeX Protocol is on Ethereum/L2, no meaningful BSC presence
+            // STRK  — StarkNet token is ERC-20 on Ethereum only, BSC versions are unverified clones
+            // TRUMP — no official BEP20, only low-liquidity meme clones on BSC
         };
 
         public PancakeSwapClient(IHttpClientFactory factory, ILogger<PancakeSwapClient> logger)

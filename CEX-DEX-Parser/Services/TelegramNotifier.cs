@@ -1,48 +1,73 @@
-﻿using Telegram.Bot;
+using Telegram.Bot;
 using Telegram.Bot.Types.Enums;
 
-public interface ITelegramNotifier
+namespace CEX_DEX_Parser.Services
 {
-    Task SendAsync(string message, string key = "", CancellationToken ct = default);
-}
-
-public class TelegramNotifier : ITelegramNotifier
-{
-    private readonly ITelegramBotClient _bot;
-    private readonly string _chatId;
-    private readonly ILogger<TelegramNotifier> _logger;
-    private readonly Dictionary<string, DateTime> _lastSent = new();
-    private readonly TimeSpan _cooldown = TimeSpan.FromMinutes(5);
-
-    public TelegramNotifier(IConfiguration config, ILogger<TelegramNotifier> logger)
+    public interface ITelegramNotifier
     {
-        _logger = logger;
-        _chatId = config["Telegram:ChatId"]!;
-        _bot = new TelegramBotClient(config["Telegram:BotToken"]!);
+        Task SendAsync(string message, string key = "", CancellationToken ct = default);
     }
 
-    public async Task SendAsync(string message, string key = "", CancellationToken ct = default)
+    public class TelegramNotifier : ITelegramNotifier
     {
-        try
+        private readonly ITelegramBotClient _bot;
+        private readonly ChatIdStore _store;
+        private readonly ILogger<TelegramNotifier> _logger;
+        private readonly Dictionary<string, DateTime> _lastSent = new();
+        private readonly TimeSpan _cooldown = TimeSpan.FromMinutes(4);
+
+        public TelegramNotifier(IConfiguration config, ChatIdStore store, ILogger<TelegramNotifier> logger)
         {
-            if (!string.IsNullOrEmpty(key))
+            _logger = logger;
+            _store = store;
+            _bot = new TelegramBotClient(config["Telegram:BotToken"]!);
+        }
+
+        public async Task SendAsync(string message, string key = "", CancellationToken ct = default)
+        {
+            try
             {
-                if (_lastSent.TryGetValue(key, out var last) && DateTime.UtcNow - last < _cooldown)
-                    return; // skip — same alert fired too recently
+                if (!string.IsNullOrEmpty(key))
+                {
+                    if (_lastSent.TryGetValue(key, out var last) && DateTime.UtcNow - last < _cooldown)
+                    {
+                        _logger.LogInformation("Telegram alert suppressed by cooldown for key: {Key}", key);
+                        return;
+                    }
+                    _lastSent[key] = DateTime.UtcNow;
+                }
 
-                await _bot.SendMessage(
-                chatId: _chatId,
-                text: message,
-                parseMode: ParseMode.Html,
-                cancellationToken: ct);
+                // Broadcast to all subscribers who clicked /start
+                var chatIds = await _store.GetAllAsync();
 
-                _lastSent[key] = DateTime.UtcNow;
+                if (chatIds.Count == 0)
+                {
+                    _logger.LogWarning("No Telegram subscribers yet — no messages sent.");
+                    return;
+                }
+
+                foreach (var chatId in chatIds)
+                {
+                    try
+                    {
+                        await _bot.SendMessage(
+                            chatId: chatId,
+                            text: message,
+                            parseMode: ParseMode.Html,
+                            cancellationToken: ct);
+                    }
+                    catch (Exception ex)
+                    {
+                        // One bad chat ID shouldn't stop others from receiving
+                        _logger.LogWarning(ex, "Failed to send to chat {ChatId}", chatId);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Telegram broadcast failed");
             }
         }
-        catch (Exception ex)
-        {
-            // Telegram failure must never crash your 30s monitor loop
-            _logger.LogWarning(ex, "Telegram alert failed to send");
-        }
     }
+
 }

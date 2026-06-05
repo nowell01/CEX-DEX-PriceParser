@@ -6,7 +6,7 @@ namespace CEX_DEX_Parser.Services
     {
         private readonly IServiceProvider _services;
         private readonly ILogger<PriceMonitorService> _logger;
-        private readonly TimeSpan _interval = TimeSpan.FromSeconds(30);
+        private readonly TimeSpan _interval = TimeSpan.FromMinutes(5);
 
         // Same default pairs as PricesController — single source of truth
         private static readonly string[] DefaultPairs = new[]

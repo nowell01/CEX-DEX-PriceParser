@@ -1,5 +1,6 @@
 using CEX_DEX_Parser.Hubs;
 using CEX_DEX_Parser.Services;
+using Telegram.Bot;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,6 +15,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowReact", policy =>
     {
         policy.WithOrigins(
+                "http://localhost:3000",
                 "http://localhost:3001",
                 "https://cex-dex-client.vercel.app",
                 "https://cex-dex-client-git-main-nowell01s-projects.vercel.app"
@@ -77,6 +79,7 @@ builder.Services.AddScoped<ExchangeService>();
 builder.Services.AddScoped<AlertService>();
 builder.Services.AddSingleton<ArbitrageDetector>();
 builder.Services.AddSingleton<ITelegramNotifier, TelegramNotifier>();
+builder.Services.AddSingleton<ChatIdStore>();
 builder.Services.AddHostedService<PriceMonitorService>();
 
 var app = builder.Build();
@@ -92,6 +95,12 @@ app.UseHttpsRedirection();
 app.UseAuthorization();
 
 app.MapControllers();
+// Register webhook with Telegram on startup
+var bot = app.Services.GetRequiredService<ITelegramNotifier>();
+var botClient = new TelegramBotClient(app.Configuration["Telegram:BotToken"]!);
+await botClient.SetWebhook(
+    url: "https://cex-dex-parser-h7b3f0gwbyfah7ft.canadacentral-01.azurewebsites.net/api/telegram/webhook"
+);
 app.MapHub<AlertHub>("/hubs/alerts");
 
 app.Run();

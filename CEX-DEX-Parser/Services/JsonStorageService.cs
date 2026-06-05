@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using Microsoft.Extensions.Logging;
+using System.Text.Json;
 
 namespace CEX_DEX_Parser.Services
 {
@@ -8,22 +9,47 @@ namespace CEX_DEX_Parser.Services
         private readonly JsonSerializerOptions _options;
         private readonly SemaphoreSlim _lock = new(1, 1);
 
-        public JsonStorageService(IWebHostEnvironment env)
+        public JsonStorageService(IWebHostEnvironment env, ILogger<JsonStorageService> logger)
         {
             //_dataDir = Path.Combine(env.ContentRootPath, "Data");
-            var isAzure = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("WEBSITE_SITE_NAME"));
-            _dataDir = isAzure
-                ? Path.Combine("D:\\home\\data", "cex-dex-parser")
-                : Path.Combine(Path.GetTempPath(), "cex-dex-parser");
-
-            if (!Directory.Exists(_dataDir))
-                Directory.CreateDirectory(_dataDir);
+            _dataDir = ResolveWritableDirectory(
+            [
+                Path.Combine("D:\\home\\data", "cex-dex-parser"),
+                Path.Combine(Path.GetTempPath(), "cex-dex-parser"),
+                Path.Combine(env.ContentRootPath, "Data")
+            ], logger);
 
             _options = new JsonSerializerOptions
             {
                 WriteIndented = true,
                 PropertyNameCaseInsensitive = true
             };
+        }
+
+        private static string ResolveWritableDirectory(string[] candidates, ILogger logger)
+        {
+            foreach (var path in candidates)
+            {
+                try
+                {
+                    Directory.CreateDirectory(path);
+
+                    // Verify we can actually write — not just create the directory
+                    var testFile = Path.Combine(path, ".write-test");
+                    File.WriteAllText(testFile, "ok");
+                    File.Delete(testFile);
+
+                    logger.LogInformation("[JsonStorageService] Using data directory: {Path}", path);
+                    return path;
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning("[JsonStorageService] Path not writable, trying next: {Path} — {Error}", path, ex.Message);
+                }
+            }
+
+            throw new InvalidOperationException(
+                "[JsonStorageService] No writable directory found. Tried: " + string.Join(", ", candidates));
         }
 
         public async Task<List<T>> ReadAsync<T>(string fileName)
