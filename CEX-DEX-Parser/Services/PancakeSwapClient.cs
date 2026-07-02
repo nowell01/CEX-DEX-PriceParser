@@ -23,7 +23,7 @@ namespace CEX_DEX_Parser.Services
             { "DOGE", "0xbA2aE424d960c26247Dd6c32edC70B295c744C43" }, // Binance-pegged DOGE
             { "LTC",  "0x4338665CBB7B2485A8855A139b75D5e34AB0DB94" }, // Binance-pegged LTC
             { "AVAX", "0x1CE0c2827e2eF14D5C4f29a091d735A204794041" }, // Binance-pegged AVAX
-            { "TON",  "0x76A797A59Ba2C17726896976B7B3747BfD1d220f" }, // Toncoin on BSC
+            //{ "TON",  "0x76A797A59Ba2C17726896976B7B3747BfD1d220f" }, // Toncoin on BSC
             { "AAVE", "0xfb6115445Bff7b52FeB98650C87f44907E58f802" }, // Binance-pegged AAVE
             { "ARB",  "0xa050FFb3eEb8200eEB7F61ce34FF644420FD3522" }, // Arbitrum on BSC
             { "LINK", "0xF8A0BF9cF54Bb92F17374d9e9A321E6a111A51bD" }, // Binance-pegged Chainlink

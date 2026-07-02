@@ -22,7 +22,7 @@ namespace CEX_DEX_Parser.Controllers
             "ADA/USDT",
             "LTC/USDT",
             "AVAX/USDT",
-            "TON/USDT",
+            "GRAM/USDT",
             "AAVE/USDT",
             "APEX/USDT",
             "ARB/USDT",

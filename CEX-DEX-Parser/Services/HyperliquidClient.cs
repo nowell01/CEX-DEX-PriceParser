@@ -34,7 +34,7 @@ namespace CEX_DEX_Parser.Services
                 using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
                 var root = doc.RootElement;
 
-                if (!root.TryGetProperty(baseAsset, out var priceElement) || baseAsset == "TON")
+                if (!root.TryGetProperty(baseAsset, out var priceElement))
                 {
                     _logger.LogWarning("Hyperliquid does not list {Asset}", baseAsset);
                     return null;
