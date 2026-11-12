@@ -5,6 +5,7 @@ import Header from './components/Header';
 import Dashboard from './components/Dashboard';
 import AlertsSidebar from './components/AlertsSidebar';
 import './App.css';
+import AiSummaryPanel from './components/AiSummaryPanel';
 
 export default function App() {
   const [pairs, setPairs] = useState([]);
@@ -74,6 +75,7 @@ export default function App() {
         refreshing={refreshing}
         onRefresh={() => loadPrices(true)}
       />
+      <AiSummaryPanel />
       <div className="app-body">
         <Dashboard
           pairs={pairs}

@@ -1,6 +1,11 @@
 using CEX_DEX_Parser.Hubs;
 using CEX_DEX_Parser.Services;
 using Telegram.Bot;
+using System.Net.Http.Headers;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.Options;
+using CEX_DEX_Parser.Services.LLM;
+using CEX_DEX_Parser.Services.Insights;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -66,6 +71,36 @@ builder.Services.AddHttpClient("Hyperliquid", c =>
     c.Timeout = TimeSpan.FromSeconds(10);
 });
 
+//LLM API calls configuration
+builder.Services.Configure<LlmOptions>(builder.Configuration.GetSection(LlmOptions.Section));
+
+builder.Services.AddHttpClient<ILlmClient, OpenAiCompatibleClient>((sp, http) =>
+{
+    var o = sp.GetRequiredService<IOptions<LlmOptions>>().Value;
+    http.BaseAddress = new Uri(o.BaseUrl.TrimEnd('/') + "/");
+    if (!string.IsNullOrWhiteSpace(o.ApiKey))
+        http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", o.ApiKey);
+    http.Timeout = TimeSpan.FromMinutes(3);
+})
+.AddStandardResilienceHandler(r =>
+{
+    r.Retry.MaxRetryAttempts = 2;
+    r.AttemptTimeout.Timeout = TimeSpan.FromSeconds(60);
+    r.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(150);
+    r.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(120);
+});
+
+builder.Services.AddRateLimiter(o =>
+{
+    o.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    o.AddFixedWindowLimiter("llm", w =>
+    {
+        w.PermitLimit = 2;
+        w.Window = TimeSpan.FromMinutes(1);
+        w.QueueLimit = 0;
+    });
+});
+
 // Application services
 builder.Services.AddSingleton<JsonStorageService>();
 builder.Services.AddScoped<BinanceClient>();
@@ -81,6 +116,8 @@ builder.Services.AddSingleton<ArbitrageDetector>();
 builder.Services.AddSingleton<ITelegramNotifier, TelegramNotifier>();
 builder.Services.AddSingleton<ChatIdStore>();
 builder.Services.AddHostedService<PriceMonitorService>();
+builder.Services.AddMemoryCache();
+builder.Services.AddScoped<AlertInsightsService>();
 
 var app = builder.Build();
 
@@ -93,6 +130,8 @@ if (app.Environment.IsDevelopment())
 app.UseCors("AllowReact");
 app.UseHttpsRedirection();
 app.UseAuthorization();
+app.UseRateLimiter();
+app.MapControllers();
 
 app.MapControllers();
 // Register webhook with Telegram on startup

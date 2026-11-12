@@ -10,3 +10,9 @@
   flex: 1;
   overflow: hidden;
 }
+
+.ai-summary {
+    padding: 12px 20px;
+    max-height: 40vh;
+    overflow-y: auto;
+}

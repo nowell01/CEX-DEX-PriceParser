@@ -19,3 +19,10 @@ export async function fetchAlertHistory() {
   if (!res.ok) throw new Error('No alert history');
   return res.json();
 }
+
+export async function fetchAiSummary(hours = 24) {
+    const res = await fetch(`${BASE}/api/insights/summary?hours=${hours}`);
+    if (res.status === 429) throw new Error('Too many requests. Try again in a minute.');
+    if (!res.ok) throw new Error('AI summary is unavailable right now.');
+    return res.json();
+}
