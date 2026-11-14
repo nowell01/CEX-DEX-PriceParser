@@ -23,7 +23,9 @@ builder.Services.AddCors(options =>
                 "http://localhost:3000",
                 "http://localhost:3001",
                 "https://cex-dex-client.vercel.app",
-                "https://cex-dex-client-git-main-nowell01s-projects.vercel.app"
+                "https://cex-dex-client-git-main-nowell01s-projects.vercel.app",
+                "https://www.cryptoscan.tech",
+                "https://cryptoscan.tech"
               )
               .AllowAnyHeader()
               .AllowAnyMethod()
