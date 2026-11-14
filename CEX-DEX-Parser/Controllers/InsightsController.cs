@@ -14,7 +14,7 @@ namespace CEX_DEX_Parser.Controllers
         [EnableRateLimiting("llm")]
         public async Task<IActionResult> Summary([FromQuery] int hours = 24, CancellationToken ct = default)
         {
-            hours = Math.Clamp(hours, 1, 168);
+            hours = Math.Clamp(hours, 1, 336);
 
             try
             {
