@@ -154,3 +154,13 @@
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
 }
+
+.telegram-btn {
+  text-decoration: none;
+}
+
+.telegram-btn:hover {
+  color: #229ED9;
+  border-color: #229ED9;
+  background: rgba(34, 158, 217, 0.12);
+}
