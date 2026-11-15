@@ -1,4 +1,5 @@
 import './Header.css';
+import { FaTelegramPlane } from 'react-icons/fa';
 
 function formatTime(date) {
   if (!date) return '—';
@@ -40,6 +41,16 @@ export default function Header({ connected, lastUpdated, refreshing, onRefresh }
             <path d="M3.51 9a9 9 0 0114.13-3.36L23 10M1 14l5.36 4.36A9 9 0 0020.49 15" />
           </svg>
         </button>
+        <a
+          className="refresh-btn telegram-btn"
+          href="https://t.me/Ggrizzlybot?start=1"
+          target="_blank"
+          rel="noopener noreferrer"
+          title="Get alerts on Telegram"
+          aria-label="Get alerts on Telegram"
+        >
+          <FaTelegramPlane />
+        </a>
       </div>
     </header>
   );
