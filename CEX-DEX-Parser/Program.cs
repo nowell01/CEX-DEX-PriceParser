@@ -2,10 +2,12 @@ using CEX_DEX_Parser.Hubs;
 using CEX_DEX_Parser.Services;
 using Telegram.Bot;
 using System.Net.Http.Headers;
+using CEX_DEX_Parser.Data;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Options;
 using CEX_DEX_Parser.Services.LLM;
 using CEX_DEX_Parser.Services.Insights;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -120,6 +122,11 @@ builder.Services.AddSingleton<ChatIdStore>();
 builder.Services.AddHostedService<PriceMonitorService>();
 builder.Services.AddMemoryCache();
 builder.Services.AddScoped<AlertInsightsService>();
+
+// PostgreSQL db context connection
+builder.Services.AddDbContextFactory<AppDbContext>(o =>
+    o.UseNpgsql(builder.Configuration.GetConnectionString("Db"))
+        .UseSnakeCaseNamingConvention());
 
 var app = builder.Build();
 
