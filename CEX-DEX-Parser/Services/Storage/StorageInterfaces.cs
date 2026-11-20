@@ -14,6 +14,7 @@ namespace CEX_DEX_Parser.Services.Storage
         {
             Task AddAsync(AlertLog alert);
             Task<List<AlertLog>> GetRecentAsync(int take = 100);
+            Task<List<AlertLog>> GetSinceAsync(DateTime fromUtc);
         }
 
         public interface IPriceHistoryStore

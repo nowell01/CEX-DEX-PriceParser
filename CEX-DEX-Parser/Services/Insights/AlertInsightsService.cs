@@ -1,17 +1,19 @@
-using System.Text.Json;
 using CEX_DEX_Parser.Models;
 using CEX_DEX_Parser.Services.LLM;
+using CEX_DEX_Parser.Services.Storage;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
+using System.Text.Json;
+using static CEX_DEX_Parser.Services.Storage.StorageInterfaces;
 
 namespace CEX_DEX_Parser.Services.Insights
 {
     public sealed class AlertInsightsService(
-    JsonStorageService storage,
-    ILlmClient llm,
-    IMemoryCache cache,
-    IOptions<LlmOptions> options,
-    ILogger<AlertInsightsService> logger)
+        IAlertLogStore alertStore,
+        ILlmClient llm,
+        IMemoryCache cache,
+        IOptions<LlmOptions> options,
+        ILogger<AlertInsightsService> logger)
     {
         private static readonly JsonSerializerOptions ParseJson = new(JsonSerializerDefaults.Web);
 
@@ -24,9 +26,8 @@ namespace CEX_DEX_Parser.Services.Insights
             var to = DateTime.UtcNow;
             var from = to.AddHours(-hours);
 
-            var alerts = (await storage.ReadAsync<AlertLog>("alerts-log.json"))
-                .Where(a => a.TriggeredAt >= from)
-                .ToList();
+            // Filtering now happens in the database (indexed on triggered_at)
+            var alerts = await alertStore.GetSinceAsync(from);
 
             var response = alerts.Count == 0
                 ? EmptyWindow(from, to)

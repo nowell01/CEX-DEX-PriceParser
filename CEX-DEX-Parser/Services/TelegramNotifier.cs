@@ -1,5 +1,8 @@
+using CEX_DEX_Parser.Services.Storage;
+using System.Collections.Concurrent;
 using Telegram.Bot;
 using Telegram.Bot.Types.Enums;
+using static CEX_DEX_Parser.Services.Storage.StorageInterfaces;
 
 namespace CEX_DEX_Parser.Services
 {
@@ -11,16 +14,17 @@ namespace CEX_DEX_Parser.Services
     public class TelegramNotifier : ITelegramNotifier
     {
         private readonly ITelegramBotClient _bot;
-        private readonly ChatIdStore _store;
+        private readonly IChatIdStore _store;
         private readonly ILogger<TelegramNotifier> _logger;
-        private readonly Dictionary<string, DateTime> _lastSent = new();
+        private readonly ConcurrentDictionary<string, DateTime> _lastSent = new();
         private readonly TimeSpan _cooldown = TimeSpan.FromMinutes(4);
 
-        public TelegramNotifier(IConfiguration config, ChatIdStore store, ILogger<TelegramNotifier> logger)
+        public TelegramNotifier(IConfiguration config, IChatIdStore store, ILogger<TelegramNotifier> logger)
         {
             _logger = logger;
             _store = store;
-            _bot = new TelegramBotClient(config["Telegram:BotToken"]!);
+            _bot = new TelegramBotClient(config["Telegram:BotToken"]
+                ?? throw new InvalidOperationException("Telegram:BotToken is not configured."));
         }
 
         public async Task SendAsync(string message, string key = "", CancellationToken ct = default)
@@ -29,20 +33,21 @@ namespace CEX_DEX_Parser.Services
             {
                 if (!string.IsNullOrEmpty(key))
                 {
-                    if (_lastSent.TryGetValue(key, out var last) && DateTime.UtcNow - last < _cooldown)
+                    var now = DateTime.UtcNow;
+                    if (_lastSent.TryGetValue(key, out var last) && now - last < _cooldown)
                     {
                         _logger.LogInformation("Telegram alert suppressed by cooldown for key: {Key}", key);
                         return;
                     }
-                    _lastSent[key] = DateTime.UtcNow;
+                    _lastSent[key] = now;
                 }
 
-                // Broadcast to all subscribers who clicked /start
+                // Broadcast to all subscribers who sent /start
                 var chatIds = await _store.GetAllAsync();
 
                 if (chatIds.Count == 0)
                 {
-                    _logger.LogWarning("No Telegram subscribers yet — no messages sent.");
+                    _logger.LogWarning("No Telegram subscribers yet - no messages sent.");
                     return;
                 }
 
@@ -69,5 +74,4 @@ namespace CEX_DEX_Parser.Services
             }
         }
     }
-
 }
