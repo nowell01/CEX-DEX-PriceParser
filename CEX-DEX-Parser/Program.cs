@@ -132,6 +132,8 @@ builder.Services.AddScoped<AlertInsightsService>();
 
 builder.Services.AddHostedService<PriceMonitorService>();
 builder.Services.AddMemoryCache();
+// Small Hosted service to register the Telegram webhook on startup, so that we don't have to do it manually
+builder.Services.AddHostedService<TelegramWebhookRegistrar>();
 
 var app = builder.Build();
 

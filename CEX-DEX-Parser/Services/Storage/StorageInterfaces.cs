@@ -6,7 +6,7 @@ namespace CEX_DEX_Parser.Services.Storage
     {
         public interface IChatIdStore
         {
-            Task AddAsync(string chatId);
+            Task<bool> AddAsync(string chatId, CancellationToken ct = default);
             Task<List<string>> GetAllAsync();
         }
 
