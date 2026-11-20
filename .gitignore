@@ -8,3 +8,6 @@ build/
 *.log
 .env
 .claude/
+/CEX-DEX-Parser/Data/alerts-log.json
+/CEX-DEX-Parser/Data/price-history.json
+/CEX-DEX-Parser/Data/telegram-subscribers.json
