@@ -17,4 +17,5 @@ build/
 
 # Local env / secrets
 *.env
+.env.docker
 appsettings.*.local.json

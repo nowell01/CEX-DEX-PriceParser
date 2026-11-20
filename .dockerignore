@@ -35,3 +35,4 @@ CEX-DEX-Parser/data-backup/
 CEX-DEX-Parser/data-azure/
 **/*.env
 **/.env.docker
+CEX-DEX-Parser/cex-dex-client/
