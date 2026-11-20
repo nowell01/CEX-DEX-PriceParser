@@ -1,4 +1,5 @@
-using CEX_DEX_Parser.Models;
+using CEX_DEX_Parser.Services.Storage;
+using static CEX_DEX_Parser.Services.Storage.StorageInterfaces;
 
 namespace CEX_DEX_Parser.Services
 {
@@ -9,28 +10,12 @@ namespace CEX_DEX_Parser.Services
         private readonly TimeSpan _interval = TimeSpan.FromMinutes(5);
 
         // Same default pairs as PricesController — single source of truth
-        private static readonly string[] DefaultPairs = new[]
+        private static readonly string[] DefaultPairs =
         {
-            "BTC/USDT",
-            "ETH/USDT",
-            "SOL/USDT",
-            "XRP/USDT",
-            "SUI/USDT",
-            "DOGE/USDT",
-            "ADA/USDT",
-            "LTC/USDT",
-            "AVAX/USDT",
-            "GRAM/USDT",
-            "AAVE/USDT",
-            "APEX/USDT",
-            "ARB/USDT",
-            "BNB/USDT",
-            "STRK/USDT",
-            "TRX/USDT",
-            "PEPE/USDT",
-            "LINK/USDT",
-            "TRUMP/USDT",
-            "SHIB/USDT",
+            "BTC/USDT", "ETH/USDT", "SOL/USDT", "XRP/USDT", "SUI/USDT",
+            "DOGE/USDT", "ADA/USDT", "LTC/USDT", "AVAX/USDT", "GRAM/USDT",
+            "AAVE/USDT", "APEX/USDT", "ARB/USDT", "BNB/USDT", "STRK/USDT",
+            "TRX/USDT", "PEPE/USDT", "LINK/USDT", "TRUMP/USDT", "SHIB/USDT",
             "XLM/USDT"
         };
 
@@ -65,16 +50,20 @@ namespace CEX_DEX_Parser.Services
             using var scope = _services.CreateScope();
             var exchangeService = scope.ServiceProvider.GetRequiredService<ExchangeService>();
             var alertService = scope.ServiceProvider.GetRequiredService<AlertService>();
-            var storage = scope.ServiceProvider.GetRequiredService<JsonStorageService>();
+            var priceHistory = scope.ServiceProvider.GetRequiredService<IPriceHistoryStore>();
             var detector = scope.ServiceProvider.GetRequiredService<ArbitrageDetector>();
 
-            // Fetch prices from all 6 exchanges for the default pairs
             var comparisons = await exchangeService.GetAllComparisonsAsync(DefaultPairs);
 
-            // Save every price snapshot to price-history.json
-            foreach (var comparison in comparisons)
+            // Save the whole scan in one database write (was one full-file rewrite per symbol)
+            try
             {
-                await storage.AppendAsync("price-history.json", comparison);
+                await priceHistory.AddManyAsync(comparisons);
+            }
+            catch (Exception ex)
+            {
+                // A database hiccup must not stop arbitrage detection/alerts for this cycle
+                _logger.LogError(ex, "Failed to save price history for this cycle.");
             }
 
             // Check for arbitrage: alerts trigger when spread > 3%

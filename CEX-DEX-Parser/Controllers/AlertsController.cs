@@ -8,6 +8,7 @@ namespace CEX_DEX_Parser.Controllers
     [Route("api/alerts")]
     public class AlertsController : ControllerBase
     {
+        private const int MaxTake = 1000;
         private readonly AlertService _alertService;
 
         public AlertsController(AlertService alertService)
@@ -15,14 +16,15 @@ namespace CEX_DEX_Parser.Controllers
             _alertService = alertService;
         }
 
-        // GET: api/alerts/history
+        // GET: api/alerts/history?take=200
         [HttpGet("history")]
-        public async Task<ActionResult<IEnumerable<AlertLogDTO>>> GetHistory()
+        public async Task<ActionResult<IEnumerable<AlertLogDTO>>> GetHistory([FromQuery] int take = 200)
         {
-            var history = await _alertService.GetHistoryAsync();
+            take = Math.Clamp(take, 1, MaxTake);
+
+            var history = await _alertService.GetHistoryAsync(take);   // already newest first
 
             var historyDTOs = history
-                .OrderByDescending(a => a.TriggeredAt)
                 .Select(a => new AlertLogDTO
                 {
                     Id = a.Id,
@@ -37,13 +39,9 @@ namespace CEX_DEX_Parser.Controllers
                 .ToList();
 
             if (historyDTOs.Count > 0)
-            {
                 return historyDTOs;
-            }
-            else
-            {
-                return NotFound(new { message = "Error: No alert history found." });
-            }
+
+            return NotFound(new { message = "Error: No alert history found." });
         }
     }
 }

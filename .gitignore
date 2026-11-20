@@ -7,4 +7,14 @@ node_modules/
 build/
 *.log
 .env
-.claude/
+
+# Local data / JSON backups (never commit)
+/CEX-DEX-Parser/Data/alerts-log.json
+/CEX-DEX-Parser/Data/price-history.json
+/CEX-DEX-Parser/Data/telegram-subscribers.json
+/CEX-DEX-Parser/data-backup/
+/CEX-DEX-Parser/data-azure/
+
+# Local env / secrets
+*.env
+appsettings.*.local.json

@@ -1,13 +1,22 @@
+using CEX_DEX_Parser.Data;
 using CEX_DEX_Parser.Hubs;
 using CEX_DEX_Parser.Services;
-using Telegram.Bot;
-using System.Net.Http.Headers;
-using Microsoft.AspNetCore.RateLimiting;
-using Microsoft.Extensions.Options;
-using CEX_DEX_Parser.Services.LLM;
 using CEX_DEX_Parser.Services.Insights;
+using CEX_DEX_Parser.Services.LLM;
+using CEX_DEX_Parser.Services.Storage;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using System.Net.Http.Headers;
+using Telegram.Bot;
+using static CEX_DEX_Parser.Services.Storage.StorageInterfaces;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// PostgreSQL db context connection
+builder.Services.AddDbContextFactory<AppDbContext>(o =>
+    o.UseNpgsql(builder.Configuration.GetConnectionString("Db"))
+        .UseSnakeCaseNamingConvention());
 
 // Controllers + Swagger
 builder.Services.AddControllers();
@@ -104,7 +113,12 @@ builder.Services.AddRateLimiter(o =>
 });
 
 // Application services
-builder.Services.AddSingleton<JsonStorageService>();
+builder.Services.AddSingleton<IChatIdStore, DbChatIdStore>();
+builder.Services.AddSingleton<IAlertLogStore, DbAlertLogStore>();
+builder.Services.AddSingleton<IPriceHistoryStore, DbPriceHistoryStore>();
+builder.Services.AddSingleton<ITelegramNotifier, TelegramNotifier>();
+builder.Services.AddSingleton<ArbitrageDetector>();
+
 builder.Services.AddScoped<BinanceClient>();
 builder.Services.AddScoped<CoinbaseClient>();
 builder.Services.AddScoped<KuCoinClient>();
@@ -114,12 +128,10 @@ builder.Services.AddScoped<PancakeSwapClient>();
 builder.Services.AddScoped<HyperliquidClient>();
 builder.Services.AddScoped<ExchangeService>();
 builder.Services.AddScoped<AlertService>();
-builder.Services.AddSingleton<ArbitrageDetector>();
-builder.Services.AddSingleton<ITelegramNotifier, TelegramNotifier>();
-builder.Services.AddSingleton<ChatIdStore>();
+builder.Services.AddScoped<AlertInsightsService>();
+
 builder.Services.AddHostedService<PriceMonitorService>();
 builder.Services.AddMemoryCache();
-builder.Services.AddScoped<AlertInsightsService>();
 
 var app = builder.Build();
 
@@ -127,6 +139,28 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+}
+
+using (var scope = app.Services.CreateScope())
+{
+    var factory = scope.ServiceProvider.GetRequiredService<IDbContextFactory<AppDbContext>>();
+    await using var db = await factory.CreateDbContextAsync();
+    await db.Database.MigrateAsync();
+}
+
+if (args.Contains("--import-json"))
+{
+    var idx = Array.IndexOf(args, "--import-json");
+    var dir = idx + 1 < args.Length && !args[idx + 1].StartsWith("--")
+        ? args[idx + 1]
+        : Path.Combine(builder.Environment.ContentRootPath, "data-backup");
+
+    using var scope = app.Services.CreateScope();
+    var factory = scope.ServiceProvider.GetRequiredService<IDbContextFactory<AppDbContext>>();
+    var log = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    await using var db = await factory.CreateDbContextAsync();
+    await JsonImporter.RunAsync(db, dir, log);
+    return;
 }
 
 app.UseCors("AllowReact");

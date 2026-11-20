@@ -1,6 +1,6 @@
 # CEX·DEX Arbitrage Dashboard
 
-A full-stack real-time arbitrage monitoring system that tracks price spreads across **5 centralized exchanges** and **2 decentralized exchanges**, detects arbitrage opportunities, and delivers live alerts via a React dashboard and Telegram bot.
+A full-stack, real-time arbitrage monitoring system that tracks price spreads across **5 centralized** and **2 decentralized exchanges**, detects arbitrage opportunities, stores price and alert history in **PostgreSQL**, generates **AI-written alert summaries**, and delivers live alerts through a React dashboard and a Telegram bot.
 
 **Live Demo:** https://cex-dex-client.vercel.app  
 **Backend API:** https://cex-dex-parser-h7b3f0gwbyfah7ft.canadacentral-01.azurewebsites.net
@@ -9,20 +9,23 @@ A full-stack real-time arbitrage monitoring system that tracks price spreads acr
 
 ## Overview
 
-The system polls 21 trading pairs every 5 minutes across 7 exchanges, compares prices, and fires alerts whenever a spread exceeds 3%. Alerts are pushed to the React frontend in real time via SignalR WebSockets and simultaneously sent to all Telegram subscribers.
+The system polls 21 trading pairs every 5 minutes across 7 exchanges, compares prices, and fires an alert whenever a spread exceeds 3%. Alerts are pushed to the React frontend in real time via SignalR and sent to all Telegram subscribers. Every scan and alert is persisted to PostgreSQL, and an LLM (via Groq) turns raw alert data into short, plain-language insights.
 
 ```
-Exchanges → PriceMonitorService (every 5 min)
-               ↓
-         ArbitrageDetector (spread > 3%)
-               ↓
-    ┌──────────┴──────────┐
-    ▼                     ▼
-SignalR Hub          TelegramNotifier
-(React dashboard)    (all /start subscribers)
-               ↓
-         JsonStorageService
-         (alerts-log.json, price-history.json)
+Exchanges ─► PriceMonitorService (every 5 min)
+                    │
+                    ├─► IPriceHistoryStore ─► PostgreSQL (price_snapshots, exchange_prices)
+                    ▼
+            ArbitrageDetector (spread > 3%)
+                    │
+                    ▼
+               AlertService
+        ┌───────────┼──────────────┐
+        ▼           ▼              ▼
+   SignalR Hub  TelegramNotifier  IAlertLogStore ─► PostgreSQL (alert_logs)
+   (dashboard)  (all subscribers)       │
+                                        ▼
+                              AlertInsightsService ─► Groq LLM ─► AI summary
 ```
 
 ---
@@ -33,11 +36,14 @@ SignalR Hub          TelegramNotifier
 | Layer | Technology |
 |-------|-----------|
 | Runtime | .NET 9 / ASP.NET Core |
+| Database | PostgreSQL 18 |
+| ORM / Migrations | Entity Framework Core 9 + Npgsql, snake_case naming (`EFCore.NamingConventions`) |
 | Real-time | SignalR (`AlertHub`) |
-| Background work | `IHostedService` (`PriceMonitorService`) |
-| Storage | JSON flat-file (`JsonStorageService`) |
+| Background work | `BackgroundService` (`PriceMonitorService`) |
+| AI | Groq API (LLM alert summaries) via `AlertInsightsService` |
+| Caching | `IMemoryCache` |
 | Notifications | Telegram Bot API (`Telegram.Bot`) |
-| Hosting | Azure App Service (Windows) |
+| Hosting | Azure App Service (planned move to Linux containers, see Roadmap) |
 
 ### Frontend — `cex-dex-client/`
 | Layer | Technology |
@@ -67,83 +73,115 @@ SignalR Hub          TelegramNotifier
 
 21 pairs tracked across all exchanges:
 
-`BTC/USDT` `ETH/USDT` `SOL/USDT` `XRP/USDT` `SUI/USDT` `DOGE/USDT` `ADA/USDT` `LTC/USDT` `AVAX/USDT` `TON/USDT` `AAVE/USDT` `APEX/USDT` `ARB/USDT` `BNB/USDT` `STRK/USDT` `TRX/USDT` `PEPE/USDT` `LINK/USDT` `TRUMP/USDT` `SHIB/USDT` `XLM/USDT`
+`BTC/USDT` `ETH/USDT` `SOL/USDT` `XRP/USDT` `SUI/USDT` `DOGE/USDT` `ADA/USDT` `LTC/USDT` `AVAX/USDT` `GRAM/USDT` `AAVE/USDT` `APEX/USDT` `ARB/USDT` `BNB/USDT` `STRK/USDT` `TRX/USDT` `PEPE/USDT` `LINK/USDT` `TRUMP/USDT` `SHIB/USDT` `XLM/USDT`
 
 ---
 
 ## Key Features
 
 ### Real-Time Price Monitoring
-- Polls all 7 exchanges every **5 minutes** via `PriceMonitorService` (a .NET `BackgroundService`)
-- Saves every price snapshot to `price-history.json` for historical reference
+- Polls all 7 exchanges every **5 minutes** via `PriceMonitorService`
+- Persists every scan to PostgreSQL (one `price_snapshots` row per symbol, one `exchange_prices` row per exchange)
 - Handles per-exchange failures gracefully — one exchange going down doesn't break the cycle
 
 ### Arbitrage Detection
 - `ArbitrageDetector` compares prices across all exchange pairs for each symbol
 - Fires an alert when spread exceeds **3%**
-- Calculates: low exchange, high exchange, low price, high price, spread %
+- Calculates low/high exchange, low/high price, and spread %
+
+### AI Alert Summaries (Groq)
+- `AlertInsightsService` sends **aggregated** recent alert data (not raw rows) to a Groq-hosted LLM
+- Returns a short, plain-language summary: which pairs and exchanges are producing spreads, how often, and notable patterns
+- Results are cached with `IMemoryCache` to stay within Groq free-tier rate limits and keep responses fast
+- Exposed via `GET /api/alerts/insights`
+- Model: `openai/gpt-oss-120b`
+- Summaries are informational only, not trading advice
 
 ### Live Dashboard (React)
-- Connects to the backend via **SignalR WebSocket** for zero-latency alert delivery
-- Displays live price comparisons per symbol with highest/lowest exchange highlighted
-- Alerts panel shows real-time incoming arbitrage opportunities
+- Connects via **SignalR WebSocket** for instant alert delivery
+- Live price comparisons per symbol with highest/lowest exchange highlighted
+- Real-time alerts panel and alert history panel
 - Auto-refreshes price data every 30 seconds
-- Fully responsive — works on mobile and desktop
+- Fully responsive — mobile and desktop
 
 ### Telegram Bot Notifications
 - Users subscribe by sending `/start` to the bot
-- Chat IDs are persisted to `telegram-subscribers.json` via a webhook at `/api/telegram/webhook`
-- Every arbitrage alert is broadcast to **all subscribers**
-- Per-symbol **4-minute cooldown** prevents duplicate alert spam
-- Alert format includes: symbol, buy exchange + price, sell exchange + price, spread %, timestamp
+- Chat IDs stored in PostgreSQL (`telegram_subscribers`) via the webhook at `/api/telegram/webhook`
+- Duplicate `/start` messages are ignored atomically (`INSERT … ON CONFLICT DO NOTHING`)
+- Every alert is broadcast to **all subscribers**
+- Per-symbol **4-minute cooldown** prevents alert spam
 
 ### Alert History
-- All fired alerts are stored to `alerts-log.json`
+- All fired alerts stored in PostgreSQL (`alert_logs`), indexed by symbol and time
 - Accessible via `GET /api/alerts/history`
-- Displayed in the frontend alert history panel
 
 ### PancakeSwap DEX Integration
-- Uses **DexScreener API** to fetch BSC token prices
-- Maps 18 token symbols to their verified BEP-20 contract addresses on BSC
-- Automatically selects the highest-volume PancakeSwap pair for each token
-- Skips tokens with no official BSC liquidity (SUI, APEX, STRK, TRUMP) rather than returning unreliable prices
+- Uses the **DexScreener API** to fetch BSC token prices
+- Maps 18 token symbols to verified BEP-20 contract addresses
+- Selects the highest-volume PancakeSwap pair per token
+- Skips tokens with no official BSC liquidity (SUI, APEX, STRK, TRUMP) instead of returning unreliable prices
+
+---
+
+## Data Layer
+
+Storage moved from JSON flat files to **PostgreSQL with EF Core migrations**.
+
+| Table | Contents |
+|-------|----------|
+| `price_snapshots` | One row per symbol per scan: spread, spread %, highest/lowest exchange, captured time |
+| `exchange_prices` | Per-exchange price and 24h volume for each snapshot (FK → `price_snapshots`, cascade delete) |
+| `alert_logs` | Fired arbitrage alerts |
+| `telegram_subscribers` | Telegram chat IDs |
+| `__EFMigrationsHistory` | Applied migrations (managed by EF Core) |
+
+**Design notes**
+- **Storage abstraction:** services depend on `IPriceHistoryStore`, `IAlertLogStore`, and `IChatIdStore` (`Services/Storage/`), not on the database directly — implementations can be swapped or faked in tests via DI.
+- **Singleton-safe data access:** stores use `IDbContextFactory<AppDbContext>`, creating a short-lived context per operation, so they work inside singletons and the background service.
+- **Exact prices:** decimals map to unbounded `numeric`, so micro-priced tokens (PEPE, SHIB) and BTC are stored without rounding.
+- **UTC everywhere:** all timestamps are normalised to UTC (`timestamp with time zone`).
+- **Migrations applied on startup** with `Database.MigrateAsync()` (single-replica deployment).
+- **One-time JSON importer** (`Data/JsonImporter.cs`) migrated existing history.
 
 ---
 
 ## Project Structure
 
 ```
-CEX-DEX-Parser/                  # .NET 9 backend
+CEX-DEX-Parser/                       # .NET 9 backend
 ├── Controllers/
-│   ├── AlertsController.cs      # GET /api/alerts/history
-│   ├── PricesController.cs      # GET /api/prices, /api/prices/{symbol}
+│   ├── AlertsController.cs           # GET /api/alerts/history, AI insights
+│   ├── PricesController.cs           # GET /api/prices, /api/prices/{symbol}
 │   └── TelegramWebhookController.cs  # POST /api/telegram/webhook
+├── Data/
+│   ├── AppDbContext.cs               # EF Core context + table configuration
+│   ├── DesignTimeDbContextFactory.cs # Used by `dotnet ef`
+│   ├── JsonImporter.cs               # One-time JSON → Postgres import
+│   └── Entities/                     # PriceSnapshot, ExchangePriceRow, TelegramSubscriber
+├── Migrations/                       # EF Core migrations
+├── DTOs/
 ├── Hubs/
-│   └── AlertHub.cs              # SignalR hub
+│   └── AlertHub.cs                   # SignalR hub
+├── Metadata/
 ├── Models/
 │   ├── AlertLog.cs
-│   └── ExchangePrice.cs
+│   ├── ExchangePrice.cs
+│   └── PriceComparison.cs
 ├── Services/
-│   ├── AlertService.cs          # Log + broadcast + Telegram
-│   ├── ArbitrageDetector.cs     # Spread detection logic
-│   ├── BinanceClient.cs
-│   ├── BybitClient.cs
-│   ├── ChatIdStore.cs           # Telegram subscriber persistence
-│   ├── CoinbaseClient.cs
-│   ├── ExchangeService.cs       # Aggregates all exchange clients
-│   ├── HyperliquidClient.cs
-│   ├── JsonStorageService.cs    # Thread-safe JSON flat-file storage
-│   ├── KuCoinClient.cs
-│   ├── OkxClient.cs
-│   ├── PancakeSwapClient.cs
-│   ├── PriceMonitorService.cs   # BackgroundService — main polling loop
-│   └── TelegramNotifier.cs      # Broadcast to all subscribers
+│   ├── Storage/                      # IChatIdStore, IAlertLogStore, IPriceHistoryStore + Postgres implementations
+│   ├── AlertInsightsService.cs       # Groq LLM alert summaries
+│   ├── AlertService.cs               # Log + broadcast + Telegram
+│   ├── ArbitrageDetector.cs          # Spread detection logic
+│   ├── ExchangeService.cs            # Aggregates all exchange clients
+│   ├── PriceMonitorService.cs        # BackgroundService — main polling loop
+│   ├── TelegramNotifier.cs           # Broadcast to all subscribers
+│   └── *Client.cs                    # Binance, Bybit, Coinbase, KuCoin, OKX, PancakeSwap, Hyperliquid
 └── Program.cs
 
-cex-dex-client/                  # React + Vite frontend
+cex-dex-client/                       # React + Vite frontend
 ├── src/
-│   ├── api.js                   # REST fetch helpers
-│   ├── signalr.js               # SignalR connection factory
+│   ├── api.js                        # REST fetch helpers
+│   ├── signalr.js                    # SignalR connection factory
 │   └── components/
 │       ├── AlertsPanel.jsx
 │       ├── PriceTable.jsx
@@ -157,9 +195,10 @@ cex-dex-client/                  # React + Vite frontend
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `GET` | `/api/prices` | All current prices across all exchanges |
+| `GET` | `/api/prices` | Current prices across all exchanges |
 | `GET` | `/api/prices/{symbol}` | Prices for a specific symbol |
-| `GET` | `/api/alerts/history` | All historical arbitrage alerts |
+| `GET` | `/api/alerts/history` | Historical arbitrage alerts |
+| `GET` | `/api/alerts/insights` | AI-generated summary of recent alerts <!-- TODO: confirm route --> |
 | `POST` | `/api/telegram/webhook` | Telegram bot webhook (receives `/start`) |
 | `WS` | `/hubs/alerts` | SignalR hub — real-time alert stream |
 
@@ -169,25 +208,33 @@ cex-dex-client/                  # React + Vite frontend
 
 ### Prerequisites
 - .NET 9 SDK
+- PostgreSQL 18 (Homebrew, Postgres.app, or Docker)
 - Node.js 18+
-- A Telegram bot token ([create one via @BotFather](https://t.me/BotFather))
+- EF Core CLI: `dotnet tool install --global dotnet-ef --version 9.*`
+- A Telegram bot token ([@BotFather](https://t.me/BotFather))
+- A Groq API key ([console.groq.com](https://console.groq.com))
 
-### Backend
+### 1. Database
+
+```sql
+CREATE ROLE cryptoscan_app WITH LOGIN PASSWORD '<local-password>';
+CREATE DATABASE cryptoscan OWNER cryptoscan_app;
+```
+
+### 2. Secrets (never commit these)
 
 ```bash
 cd CEX-DEX-Parser
-dotnet restore
-dotnet run
+dotnet user-secrets init
+dotnet user-secrets set "ConnectionStrings:Db" "Host=localhost;Port=5432;Database=cryptoscan;Username=cryptoscan_app;Password=<local-password>"
+dotnet user-secrets set "Telegram:BotToken" "<bot-token>"
+dotnet user-secrets set "Groq:ApiKey" "<groq-api-key>"
 ```
 
-Add the following to `appsettings.json` (or as environment variables for production):
+Non-secret settings stay in `appsettings.json`:
 
 ```json
 {
-  "Telegram": {
-    "BotToken": "your_bot_token_here",
-    "ChatId": "your_chat_id_here"
-  },
   "ExchangeApis": {
     "Binance": "https://api.binance.com",
     "Coinbase": "https://api.exchange.coinbase.com",
@@ -200,45 +247,65 @@ Add the following to `appsettings.json` (or as environment variables for product
 }
 ```
 
-### Frontend
+### 3. Migrations
 
 ```bash
-cd cex-dex-client
-npm install
-npm run dev
+dotnet ef database update      # creates all tables
 ```
 
-The frontend runs on `http://localhost:3000` by default and connects to the backend at the URL defined in `src/api.js`.
+Migrations also run automatically on app startup.
+
+### 4. (Optional) Import legacy JSON data
+
+Place `alerts-log.json`, `price-history.json`, and `telegram-subscribers.json` in `CEX-DEX-Parser/data-backup/` (git-ignored), then:
+
+```bash
+dotnet run -- --import-json
+```
+
+### 5. Run
+
+```bash
+dotnet run                     # backend
+cd ../cex-dex-client && npm install && npm run dev   # frontend
+```
+
+The frontend runs on `http://localhost:3000` and connects to the backend URL defined in `src/api.js`.
+
+### Working with migrations
+
+```bash
+dotnet ef migrations add <Name>   # after changing entities / AppDbContext
+dotnet ef migrations script       # review SQL before applying
+dotnet ef database update         # apply
+```
+
+Applied migrations are never edited — fixes go in a new migration.
 
 ### Telegram Webhook Registration
 
-After deploying the backend, register the webhook with Telegram once:
-
 ```
-GET https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://your-backend.azurewebsites.net/api/telegram/webhook
+GET https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://<your-backend>/api/telegram/webhook
 ```
-
-Or it registers automatically on startup if configured in `Program.cs`.
 
 ---
 
 ## Deployment
 
-### Backend — Azure App Service (Windows)
+### Backend — Azure App Service
 
-1. Publish via Visual Studio → Publish → Azure App Service
-2. In **Azure Portal → App Service → Settings → Environment variables**, add:
+1. Publish via Rider / Visual Studio → Azure App Service
+2. Provision a hosted PostgreSQL (Azure Database for PostgreSQL, Neon, or Supabase)
+3. In **Azure Portal → App Service → Settings → Environment variables**, add:
 
 | Name | Value |
 |------|-------|
-| `Telegram__BotToken` | your bot token |
-| `Telegram__ChatId` | your chat id |
+| `ConnectionStrings__Db` | hosted Postgres connection string |
+| `Telegram__BotToken` | bot token |
+| `Telegram__ChatId` | chat id |
+| `Groq__ApiKey` | Groq API key |
 
-3. In **Configuration → General settings**, enable:
-   - **Web sockets: On** (required for SignalR)
-   - **HTTP version: 2.0**
-
-> Persistent storage uses `D:\home\data\cex-dex-parser` on Azure, with automatic fallback to `%TEMP%` if that path is unavailable.
+4. In **Configuration → General settings**: **Web sockets: On** (required for SignalR)
 
 ### Frontend — Vercel
 
@@ -247,18 +314,32 @@ cd cex-dex-client
 vercel deploy
 ```
 
-Ensure the production backend URL is set in `src/api.js` and `src/signalr.js`.
+Set the production backend URL in `src/api.js` and `src/signalr.js`.
 
 ---
 
 ## Configuration Reference
 
-| Setting | Default | Description |
-|---------|---------|-------------|
+| Setting | Default | Location |
+|---------|---------|----------|
 | Poll interval | 5 minutes | `PriceMonitorService._interval` |
 | Arbitrage threshold | 3% | `ArbitrageDetector` |
 | Telegram cooldown | 4 minutes | `TelegramNotifier._cooldown` |
-| Storage path (Azure) | `D:\home\data\cex-dex-parser` | `JsonStorageService` |
+| Database | `ConnectionStrings:Db` | user-secrets / env var |
+| AI provider | Groq | `AlertInsightsService` |
+| AI summary cache | `3 minutes` | `IMemoryCache` in `AlertInsightsService` |
+
+---
+
+## Roadmap
+
+- [x] PostgreSQL + EF Core migrations (replacing JSON storage)
+- [x] AI alert summaries via Groq
+- [ ] Docker image + deployment to Azure Container Apps (Linux)
+- [ ] CI/CD with GitHub Actions and EF Core migration bundles
+- [ ] Order book depth metrics (spread, depth at ±0.5 / 1 / 2%)
+- [ ] Slack and signed webhook alert channels
+- [ ] Data retention job for old price snapshots
 
 ---
 
