@@ -9,6 +9,7 @@ namespace CEX_DEX_Parser.Services
     public interface ITelegramNotifier
     {
         Task SendAsync(string message, string key = "", CancellationToken ct = default);
+        Task SendWelcomeMessageAsync(string message, string chatId, CancellationToken ct = default);
     }
 
     public class TelegramNotifier : ITelegramNotifier
@@ -71,6 +72,23 @@ namespace CEX_DEX_Parser.Services
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Telegram broadcast failed");
+            }
+        }
+
+        public async Task SendWelcomeMessageAsync(string message, string chatId, CancellationToken ct = default)
+        {
+            try
+            {
+                await _bot.SendMessage(chatId: chatId, text: message, parseMode: ParseMode.Html, cancellationToken: ct);
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                // Log to warn, but don't throw - we don't want to block the subscription process if the welcome message fails
+                _logger.LogWarning(ex, "Failed to send welcome message to chat {ChatId}", chatId);
             }
         }
     }
