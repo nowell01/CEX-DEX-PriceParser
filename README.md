@@ -1,15 +1,15 @@
-# CEX·DEX Arbitrage Dashboard
+# CryptoScan
 
-A full-stack, real-time arbitrage monitoring system that tracks price spreads across **5 centralized** and **2 decentralized exchanges**, detects arbitrage opportunities, stores price and alert history in **PostgreSQL**, generates **AI-written alert summaries**, and delivers live alerts through a React dashboard and a Telegram bot.
+**CryptoScan** is a full-stack, real-time crypto arbitrage monitoring platform. It tracks price spreads across **5 centralized** and **2 decentralized exchanges**, detects arbitrage opportunities, stores price and alert history in **PostgreSQL**, generates **AI-written alert summaries**, and delivers live alerts through a React dashboard and a Telegram bot.
 
-**Live Demo:** https://cex-dex-client.vercel.app  
-**Backend API:** https://cex-dex-parser-h7b3f0gwbyfah7ft.canadacentral-01.azurewebsites.net
+**Live app:** https://cryptoscan.tech  
+**Backend API:** `https://<cryptoscan-api>.<region>.azurecontainerapps.io` <!-- TODO: add Container Apps URL -->
 
 ---
 
 ## Overview
 
-The system polls 21 trading pairs every 5 minutes across 7 exchanges, compares prices, and fires an alert whenever a spread exceeds 3%. Alerts are pushed to the React frontend in real time via SignalR and sent to all Telegram subscribers. Every scan and alert is persisted to PostgreSQL, and an LLM (via Groq) turns raw alert data into short, plain-language insights.
+CryptoScan polls 21 trading pairs every 5 minutes across 7 exchanges, compares prices, and fires an alert whenever a spread exceeds 3%. Alerts are pushed to the React frontend in real time via SignalR and sent to all Telegram subscribers. Every scan and alert is persisted to PostgreSQL, and an LLM (via Groq) turns raw alert data into short, plain-language insights.
 
 ```
 Exchanges ─► PriceMonitorService (every 5 min)
@@ -28,30 +28,49 @@ Exchanges ─► PriceMonitorService (every 5 min)
                               AlertInsightsService ─► Groq LLM ─► AI summary
 ```
 
+### Deployment architecture
+
+```
+GitHub (push to main)
+        │
+        ▼
+GitHub Actions ─► docker build ─► Azure Container Registry
+                                          │
+                                          ▼
+                          Azure Container Apps (CryptoScan API, Linux)
+                                          │
+                                          ▼
+                     Azure Database for PostgreSQL – Flexible Server
+
+Vercel (CryptoScan frontend, cryptoscan.tech) ─► REST + SignalR ─► CryptoScan API
+```
+
 ---
 
 ## Tech Stack
 
-### Backend — `CEX-DEX-Parser/`
+### Backend — `CEX-DEX-Parser/` (CryptoScan API)
 | Layer | Technology |
 |-------|-----------|
 | Runtime | .NET 9 / ASP.NET Core |
-| Database | PostgreSQL 18 |
+| Database | PostgreSQL 18 (local) / Azure Database for PostgreSQL Flexible Server (production) |
 | ORM / Migrations | Entity Framework Core 9 + Npgsql, snake_case naming (`EFCore.NamingConventions`) |
 | Real-time | SignalR (`AlertHub`) |
 | Background work | `BackgroundService` (`PriceMonitorService`) |
 | AI | Groq API (LLM alert summaries) via `AlertInsightsService` |
 | Caching | `IMemoryCache` |
 | Notifications | Telegram Bot API (`Telegram.Bot`) |
-| Hosting | Azure App Service (planned move to Linux containers, see Roadmap) |
+| Containerization | Docker (Linux image) |
+| Hosting | Azure Container Apps, images in Azure Container Registry |
+| CI/CD | GitHub Actions (build and deploy on push to `main`) |
 
-### Frontend — `cex-dex-client/`
+### Frontend — `cex-dex-client/` (CryptoScan dashboard)
 | Layer | Technology |
 |-------|-----------|
 | Framework | React + Vite |
 | Real-time | `@microsoft/signalr` |
 | Styling | CSS / Tailwind |
-| Hosting | Vercel |
+| Hosting | Vercel, custom domain `cryptoscan.tech` |
 
 ---
 
@@ -71,7 +90,7 @@ Exchanges ─► PriceMonitorService (every 5 min)
 
 ## Monitored Trading Pairs
 
-21 pairs tracked across all exchanges:
+CryptoScan tracks 21 pairs across all exchanges:
 
 `BTC/USDT` `ETH/USDT` `SOL/USDT` `XRP/USDT` `SUI/USDT` `DOGE/USDT` `ADA/USDT` `LTC/USDT` `AVAX/USDT` `GRAM/USDT` `AAVE/USDT` `APEX/USDT` `ARB/USDT` `BNB/USDT` `STRK/USDT` `TRX/USDT` `PEPE/USDT` `LINK/USDT` `TRUMP/USDT` `SHIB/USDT` `XLM/USDT`
 
@@ -81,6 +100,7 @@ Exchanges ─► PriceMonitorService (every 5 min)
 
 ### Real-Time Price Monitoring
 - Polls all 7 exchanges every **5 minutes** via `PriceMonitorService`
+- Calls exchange APIs in parallel (`IHttpClientFactory`, `Task.WhenAll`) and normalizes their different response formats into one data model
 - Persists every scan to PostgreSQL (one `price_snapshots` row per symbol, one `exchange_prices` row per exchange)
 - Handles per-exchange failures gracefully — one exchange going down doesn't break the cycle
 
@@ -100,12 +120,13 @@ Exchanges ─► PriceMonitorService (every 5 min)
 ### Live Dashboard (React)
 - Connects via **SignalR WebSocket** for instant alert delivery
 - Live price comparisons per symbol with highest/lowest exchange highlighted
-- Real-time alerts panel and alert history panel
+- Real-time alerts panel, alert history panel, and AI insights
 - Auto-refreshes price data every 30 seconds
 - Fully responsive — mobile and desktop
+- Served at **cryptoscan.tech**
 
 ### Telegram Bot Notifications
-- Users subscribe by sending `/start` to the bot
+- Users subscribe by sending `/start` to the CryptoScan bot
 - Chat IDs stored in PostgreSQL (`telegram_subscribers`) via the webhook at `/api/telegram/webhook`
 - Duplicate `/start` messages are ignored atomically (`INSERT … ON CONFLICT DO NOTHING`)
 - Every alert is broadcast to **all subscribers**
@@ -125,7 +146,7 @@ Exchanges ─► PriceMonitorService (every 5 min)
 
 ## Data Layer
 
-Storage moved from JSON flat files to **PostgreSQL with EF Core migrations**.
+CryptoScan storage moved from JSON flat files to **PostgreSQL with EF Core migrations** (in production since November 2026).
 
 | Table | Contents |
 |-------|----------|
@@ -148,7 +169,7 @@ Storage moved from JSON flat files to **PostgreSQL with EF Core migrations**.
 ## Project Structure
 
 ```
-CEX-DEX-Parser/                       # .NET 9 backend
+CEX-DEX-Parser/                       # CryptoScan API (.NET 9)
 ├── Controllers/
 │   ├── AlertsController.cs           # GET /api/alerts/history, AI insights
 │   ├── PricesController.cs           # GET /api/prices, /api/prices/{symbol}
@@ -176,9 +197,12 @@ CEX-DEX-Parser/                       # .NET 9 backend
 │   ├── PriceMonitorService.cs        # BackgroundService — main polling loop
 │   ├── TelegramNotifier.cs           # Broadcast to all subscribers
 │   └── *Client.cs                    # Binance, Bybit, Coinbase, KuCoin, OKX, PancakeSwap, Hyperliquid
+├── Dockerfile                        # Linux container image for the API
 └── Program.cs
 
-cex-dex-client/                       # React + Vite frontend
+.github/workflows/                    # GitHub Actions: build image → ACR → Container Apps
+
+cex-dex-client/                       # CryptoScan dashboard (React + Vite)
 ├── src/
 │   ├── api.js                        # REST fetch helpers
 │   ├── signalr.js                    # SignalR connection factory
@@ -210,9 +234,12 @@ cex-dex-client/                       # React + Vite frontend
 - .NET 9 SDK
 - PostgreSQL 18 (Homebrew, Postgres.app, or Docker)
 - Node.js 18+
+- Docker (to build and run the container image locally)
 - EF Core CLI: `dotnet tool install --global dotnet-ef --version 9.*`
 - A Telegram bot token ([@BotFather](https://t.me/BotFather))
 - A Groq API key ([console.groq.com](https://console.groq.com))
+
+CryptoScan is developed on both macOS (Rider) and Windows (Visual Studio); the steps below work on either.
 
 ### 1. Database
 
@@ -266,11 +293,23 @@ dotnet run -- --import-json
 ### 5. Run
 
 ```bash
-dotnet run                     # backend
-cd ../cex-dex-client && npm install && npm run dev   # frontend
+dotnet run                     # CryptoScan API
+cd ../cex-dex-client && npm install && npm run dev   # CryptoScan dashboard
 ```
 
 The frontend runs on `http://localhost:3000` and connects to the backend URL defined in `src/api.js`.
+
+### 6. (Optional) Run the API in Docker
+
+```bash
+cd CEX-DEX-Parser
+docker build -t cryptoscan-api .
+docker run --rm -p 8080:8080 \
+  -e ConnectionStrings__Db="Host=host.docker.internal;Port=5432;Database=cryptoscan;Username=cryptoscan_app;Password=<local-password>" \
+  -e Telegram__BotToken="<bot-token>" \
+  -e Groq__ApiKey="<groq-api-key>" \
+  cryptoscan-api
+```
 
 ### Working with migrations
 
@@ -285,27 +324,40 @@ Applied migrations are never edited — fixes go in a new migration.
 ### Telegram Webhook Registration
 
 ```
-GET https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://<your-backend>/api/telegram/webhook
+GET https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://<cryptoscan-api>/api/telegram/webhook
 ```
+
+Re-register the webhook whenever the backend URL changes (for example, after the move to Container Apps).
 
 ---
 
 ## Deployment
 
-### Backend — Azure App Service
+### Backend — Azure Container Apps
 
-1. Publish via Rider / Visual Studio → Azure App Service
-2. Provision a hosted PostgreSQL (Azure Database for PostgreSQL, Neon, or Supabase)
-3. In **Azure Portal → App Service → Settings → Environment variables**, add:
+The CryptoScan API ships as a Linux Docker image and runs on **Azure Container Apps** (express environment). It moved there from a Windows Azure App Service in November 2026.
+
+**Pipeline (GitHub Actions, on push to `main`):**
+1. Build the Docker image from `CEX-DEX-Parser/Dockerfile`
+2. Push it to **Azure Container Registry**
+3. Deploy the new image revision to the Container App
+
+**Database:** Azure Database for PostgreSQL – Flexible Server (Burstable B1ms, Canada Central).
+
+**Container App configuration** (secrets stored as Container App secrets, referenced by environment variables):
 
 | Name | Value |
 |------|-------|
-| `ConnectionStrings__Db` | hosted Postgres connection string |
+| `ConnectionStrings__Db` | Flexible Server connection string (`SSL Mode=Require`) |
 | `Telegram__BotToken` | bot token |
 | `Telegram__ChatId` | chat id |
 | `Groq__ApiKey` | Groq API key |
 
-4. In **Configuration → General settings**: **Web sockets: On** (required for SignalR)
+**Notes**
+- Ingress is external over HTTPS; WebSockets work through Container Apps ingress, so SignalR needs no extra setting.
+- Keep the app at **one replica** (min = max = 1): migrations run on startup and the price monitor is a single background loop.
+- The Flexible Server firewall must allow the Container App's outbound traffic (or use "Allow Azure services").
+- GitHub Actions authenticates to Azure with a service principal / OIDC credentials stored in repository secrets.
 
 ### Frontend — Vercel
 
@@ -314,7 +366,7 @@ cd cex-dex-client
 vercel deploy
 ```
 
-Set the production backend URL in `src/api.js` and `src/signalr.js`.
+Set the production backend URL in `src/api.js` and `src/signalr.js`. The custom domain **cryptoscan.tech** points to the Vercel deployment, and the API's CORS policy must allow it.
 
 ---
 
@@ -327,7 +379,25 @@ Set the production backend URL in `src/api.js` and `src/signalr.js`.
 | Telegram cooldown | 4 minutes | `TelegramNotifier._cooldown` |
 | Database | `ConnectionStrings:Db` | user-secrets / env var |
 | AI provider | Groq | `AlertInsightsService` |
-| AI summary cache | `3 minutes` | `IMemoryCache` in `AlertInsightsService` |
+| AI summary cache | 3 minutes | `IMemoryCache` in `AlertInsightsService` |
+
+---
+
+## Changelog
+
+**November 2026**
+- Migrated storage from JSON flat files to PostgreSQL with EF Core migrations; production database on Azure Database for PostgreSQL Flexible Server
+- Added AI alert summaries via Groq (`AlertInsightsService`)
+- Containerized the API with Docker and moved hosting from Windows App Service to Azure Container Apps via Azure Container Registry
+- Added a GitHub Actions workflow that builds and deploys on every push to `main`
+- Launched the custom domain **cryptoscan.tech**
+
+**Earlier**
+- Multi-subscriber Telegram broadcasting via webhook controller and `ChatIdStore`
+- Fixed a `SemaphoreSlim` deadlock in the old JSON storage layer
+- Resolved SignalR/CORS configuration issues between Vercel and Azure
+- Corrected the Azure writable path for file storage
+- Traced production 500 errors to a missing Telegram bot token
 
 ---
 
@@ -335,11 +405,14 @@ Set the production backend URL in `src/api.js` and `src/signalr.js`.
 
 - [x] PostgreSQL + EF Core migrations (replacing JSON storage)
 - [x] AI alert summaries via Groq
-- [ ] Docker image + deployment to Azure Container Apps (Linux)
-- [ ] CI/CD with GitHub Actions and EF Core migration bundles
+- [x] Docker image + deployment to Azure Container Apps (Linux)
+- [x] CI/CD with GitHub Actions
+- [x] Custom domain (cryptoscan.tech)
+- [ ] EF Core migration bundles in the CI/CD pipeline (instead of migrating on startup)
 - [ ] Order book depth metrics (spread, depth at ±0.5 / 1 / 2%)
 - [ ] Slack and signed webhook alert channels
 - [ ] Data retention job for old price snapshots
+- [ ] B2B SaaS offering (accounts, API keys, per-customer alert settings)
 
 ---
 
