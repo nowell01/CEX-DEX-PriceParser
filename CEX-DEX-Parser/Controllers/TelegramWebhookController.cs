@@ -61,7 +61,7 @@ namespace CEX_DEX_Parser.Controllers
                       "Once the arbitrage detector notices a spread opportunity, you'll receive an alert!"
                     : "You're already subscribed to CryptoScan alerts.";
 
-                await _telegram.SendWelcomeMessageAsync(chatId, message, ct);
+                await _telegram.SendWelcomeMessageAsync(message:message, chatId:chatId, ct:ct);
 
                 if (isNew)
                     _logger.LogInformation("New subscriber: {ChatId}", chatId);
