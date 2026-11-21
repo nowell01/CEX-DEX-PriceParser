@@ -2,7 +2,7 @@ import { HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
 
 export function createHubConnection() {
   return new HubConnectionBuilder()
-      .withUrl('https://cex-dex-parser-h7b3f0gwbyfah7ft.canadacentral-01.azurewebsites.net/hubs/alerts', {
+      .withUrl('https://cryptoscan-api.mangoriver-76c0c1d7.canadacentral.azurecontainerapps.io/hubs/alerts', {
           withCredentials: true
       })
       //.withUrl('https://localhost:5258/hubs/alerts', {

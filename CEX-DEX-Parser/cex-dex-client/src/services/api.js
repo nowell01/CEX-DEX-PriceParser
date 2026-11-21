@@ -1,4 +1,4 @@
-const BASE = 'https://cex-dex-parser-h7b3f0gwbyfah7ft.canadacentral-01.azurewebsites.net';
+const BASE = 'https://cryptoscan-api.mangoriver-76c0c1d7.canadacentral.azurecontainerapps.io';
 //const BASE = 'https://localhost:5258';
 
 export async function fetchPrices() {
